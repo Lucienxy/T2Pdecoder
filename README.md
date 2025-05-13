@@ -5,13 +5,35 @@ T2Pdecoder is an integrative multi-omics deep learning model designed to predict
 ![image](https://github.com/Lucienxy/T2Pdecoder/blob/main/img/T2Pdecoder_workflow.png)
 
 # Requirements
+
+[![python >3.7.9](https://img.shields.io/badge/python-3.7.9+-blue)](https://www.python.org/) [![pytorch >2.0.1](https://img.shields.io/badge/pytorch-2.0.1+-red)](https://pytorch.org/) [![numpy-1.24.3](https://img.shields.io/badge/numpy-1.24.3-yellow)](https://numpy.org/) [![pandas-2.2.2](https://img.shields.io/badge/pandas-2.2.2-green)](https://pandas.pydata.org/) [![scikit-learn-1.3.0](https://img.shields.io/badge/scikit--learn-1.3.0-orange)](https://scikit-learn.org/) [![scipy-1.11.1](https://img.shields.io/badge/scipy-1.11.1-purple)](https://scipy.org/)
+
+## Installation
+
+### Using Conda (Recommended)
+
+```bash
+# Create a new conda environment
+conda create -n t2pdecoder python=3.7.9
+conda activate t2pdecoder
+
+# Install PyTorch
+conda install pytorch>=2.0.1 -c pytorch
+
+# Install other dependencies
+conda install numpy=1.24.3 pandas=2.2.2 scikit-learn=1.3.0 scipy=1.11.1
 ```
-- python>=3.7.9
-- pytorch>=2.0.1
-- numpy==1.24.3
-- pandas==2.2.2
-- scikit-learn=1.3.0
-- scipy=1.11.1
+
+### Using pip
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install them individually:
+
+```bash
+pip install torch>=2.0.1 numpy==1.24.3 pandas==2.2.2 scikit-learn==1.3.0 scipy==1.11.1
 ```
 
 # Tutorial
@@ -42,23 +64,27 @@ T2Pdecoder/
 │   ├── T2Pdecoder_generator.py  # Protein prediction script
 │   └── model.py              # Model architecture definitions
 │
-└── saved_model/             # Saved model directory
-    ├── embedding/           # Pre-trained and fine-tuned CLIP models
-    │   ├── rna_encoder_best.pth  # Pre-trained RNA encoder
-    │   ├── pro_encoder_best.pth  # Pre-trained protein encoder
-    │   ├── breast/              # Breast cancer fine-tuned models
-    │   │   ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for breast cancer
-    │   │   └── pro_encoder_best.pth  # Fine-tuned protein encoder for breast cancer
-    │   └── glioma/             # Glioma fine-tuned models
-    │       ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for glioma
-    │       └── pro_encoder_best.pth  # Fine-tuned protein encoder for glioma
-    └── T2Pdecoder/         # Fine-tuned models for different cancer types
-        ├── glioma/         # Glioma-specific VAE models
-        │   └── BN_VAE_best.pth  # Best VAE model for glioma
-        ├── breast/         # Breast cancer-specific VAE models
-        │   └── BN_VAE_best.pth  # Best VAE model for breast cancer
-        └── cite_gbm/       # CITE-seq GBM-specific models
-            └── cite_ft_best.pth  # Fine-tuned model for CITE-seq GBM
+├── saved_model/             # Saved model directory
+│   ├── embedding/           # Pre-trained and fine-tuned CLIP models
+│   │   ├── rna_encoder_best.pth  # Pre-trained RNA encoder
+│   │   ├── pro_encoder_best.pth  # Pre-trained protein encoder
+│   │   ├── breast/              # Breast cancer fine-tuned models
+│   │   │   ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for breast cancer
+│   │   │   └── pro_encoder_best.pth  # Fine-tuned protein encoder for breast cancer
+│   │   └── glioma/             # Glioma fine-tuned models
+│   │       ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for glioma
+│   │       └── pro_encoder_best.pth  # Fine-tuned protein encoder for glioma
+│   └── T2Pdecoder/         # Fine-tuned models for different cancer types
+│       ├── glioma/         # Glioma-specific VAE models
+│       │   └── BN_VAE_best.pth  # Best VAE model for glioma
+│       ├── breast/         # Breast cancer-specific VAE models
+│       │   └── BN_VAE_best.pth  # Best VAE model for breast cancer
+│       └── cite_gbm/       # CITE-seq GBM-specific models
+│           └── cite_ft_best.pth  # Fine-tuned model for CITE-seq GBM
+│
+├── results/                 # Results directory for all outputs
+└── requirements.txt         # Python package dependencies
+
 ```
 
 ### Key Files Description:
@@ -82,6 +108,9 @@ T2Pdecoder/
 - `src/T2Pdecoder_VAE_ft_cite.py`: Implements VAE model fine-tuning for CITE-seq data
 - `src/T2Pdecoder_generator.py`: Generates protein predictions from RNA data
 - `src/model.py`: Contains model architecture definitions
+
+#### Configuration Files:
+- `requirements.txt`: Lists all Python package dependencies with their versions
 
 #### Output Files:
 - `saved_model/`: Contains saved model checkpoints

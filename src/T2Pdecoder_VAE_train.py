@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import random
 import os
+import argparse
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import scipy.stats as stats
@@ -16,8 +17,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from model import VAE
 
-
-# os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 n_seed = 30
 
@@ -41,14 +40,27 @@ def get_mean_r2(real_d, predict_d):
     return np.mean(r2_list)
 
 torch.manual_seed(0)
+#params = [470, 462, 244, 184, 0.0005, 83] 
+parser = argparse.ArgumentParser(description="BN-VAE training ")
+parser.add_argument('--rd', type=int, default=83, help='random seed')
+parser.add_argument('--num_epochs', type=int, default=200, help='number of epochs to train')
+parser.add_argument('--batch', type=int, default=184, help='batch size')
+parser.add_argument('--lr', type=float, default=0.0005, help='learning rate')
+parser.add_argument('--node_num', type=list, default=[470, 462, 244], help='the number of nodes in each layer')
+parser.add_argument('--test_ratio', type=float, default=0.1, help='the ratio of test set')
+parser.add_argument('--p_drop', type=float, default=0.1, help='the dropout rate')
+parser.add_argument('--dim', type=int, default=12, help='embedding dimension')
+parser.add_argument('--pro_dir', type=str, default='./data/test_gbm_pro_df.csv', help='the protein abundance data file path')
+parser.add_argument('--emb_dir', type=str, default='./data/pro_emb_df_gbm.csv', help='the embedding data file path')
+parser.add_argument('--out_dir', type=str, default='./results/VAE/', help='the output directory to save the model')
+args = parser.parse_args()
 
-data_dir = './data/'
-df = pd.read_csv(data_dir+'/merged_pro_gli_df.csv')
 
+pro_dir = args.pro_dir
+df = pd.read_csv(pro_dir)
 pid_df = df[['PID']]
 
-embedding_dim = 12
-embedding_df = pd.read_csv('./save_model/embedding/glioma/pro_emb_df_merge.csv')
+embedding_df = pd.read_csv(args.emb_dir)
 embedding_df.drop(['PID'],axis=1,inplace=True)
 embedding_values = embedding_df.values
 
@@ -56,23 +68,20 @@ df.drop(['PID'],axis=1,inplace=True)
 input_size = df.shape[1]
 data_numpy = df.values
 
-params = [470, 462, 244, 184, 0.0005, 83] 
-rd = params[5]
-hidden_size = embedding_dim
-num_epochs = 200
-batch_size = params[3]
-lr=params[4]
+
+rd = args.rd
+hidden_size = args.dim
+num_epochs = args.num_epochs
+batch_size = args.batch
+lr= args.lr
 t2_w = 1
-p_drop = 0.1
-node_num = params[0:3]
-save_interval=10000
+p_drop = args.p_drop
+node_num = args.node_num
 KLD_weight = 1
-save_path = './save_model/T2Pdecoder/'
-new_dir = 'Layer_'+str(node_num[0])+'_'+str(node_num[1])+'_'+str(node_num[2])+'_Drop_'+str(p_drop)+'_BS_'+str(batch_size) +'_RD_'+str(rd)
-if not os.path.exists(save_path+new_dir):
-    os.makedirs(save_path+new_dir)
-mat_pth = save_path+new_dir
-x_train, x_test, y_train, y_test = train_test_split(data_numpy, embedding_values, test_size=0.1, random_state=rd)
+mat_pth = args.out_dir
+if not os.path.exists(mat_pth):
+    os.makedirs(mat_pth)
+x_train, x_test, y_train, y_test = train_test_split(data_numpy, embedding_values, test_size=args.test_ratio, random_state=rd)
 
 train_indices = np.where(np.all(data_numpy == x_train[:, None], axis=2))[1]
 train_pid_list = pid_df.iloc[train_indices,0].values.tolist()
@@ -91,8 +100,8 @@ train_set = TensorDataset(x_train, y_train)
 test_set = TensorDataset(x_test, y_test)  
 
 
-loss_pth_train = save_path+new_dir+'/train_loss.csv'
-loss_pth_test = save_path+new_dir+'/test_loss.csv'
+loss_pth_train = mat_pth+'/train_loss.csv'
+loss_pth_test = mat_pth+'/test_loss.csv'
 # save train and test pid as csv
 train_pid_df = pd.DataFrame(train_pid_list)         
 train_pid_df.to_csv(mat_pth+'/train_pid.csv',index=None)
@@ -110,13 +119,12 @@ optimizer = optim.Adam(vae.parameters(), lr=lr, weight_decay=1E-5)
 losses_train = []
 losses_test = []
 r2_list = []
-min_test_loss = 1
+min_test_loss = 100
 min_test_epoch = 0
 min_test_res = []
-min_train_loss = 1
-min_train_epoch = 0
 
 for epoch in range(num_epochs):
+    vae.train()
     for batch_x, batch_y in train_dataloader:
         optimizer.zero_grad()
         outputs, mu, logvar, z, z_mean = vae(batch_x)
@@ -144,29 +152,12 @@ for epoch in range(num_epochs):
         s2 = f"Epoch: {epoch + 1}, train_t1_r2: {train_t1_r2:.4f}, train_t2_r2: {train_t2_r2:.4f}, test_t1_r2: {test_t1_r2:.4f}, test_t2_r2: {test_t2_r2:.4f}"
         print(s1)
         print(s2)
-        if (epoch + 1) % save_interval == 0:
-            torch.save(vae.state_dict(), mat_pth+'/BN_VAE_'+str(hidden_size)+'_'+str(epoch+1)+'.pth')
-            outputs_all, mu_all, logvar_all, z_all,z_mean_all = vae(data_tensor)
-            mu_df = pd.DataFrame(z_mean_all.detach().numpy())
-            mu_df = pid_df.join(mu_df)
-            mu_df.to_csv(mat_pth+'/BN_VAE_'+str(hidden_size)+'_'+str(epoch+1)+'_mu.csv',index=None)
-            z_df = pd.DataFrame(z_all.detach().numpy())
-            z_df = pid_df.join(z_df)
-            z_df.to_csv(mat_pth+'/BN_VAE_'+str(hidden_size)+'_'+str(epoch+1)+'_z.csv',index=None)
         if MSE_loss_t.item() < min_test_loss:
             min_test_loss = MSE_loss_t.item()
             min_test_epoch = epoch+1
             min_test_res = [s1,s2]
             torch.save(vae.state_dict(), mat_pth+'/BN_VAE_best.pth')
-            outputs_all, mu_all, logvar_all, z_all,z_mean_all = vae(data_tensor)
-            mu_df = pd.DataFrame(z_mean_all.detach().numpy())
-            mu_df = pid_df.join(mu_df)
-            mu_df.to_csv(mat_pth+'/BN_VAE_best_mu.csv',index=None)
-            z_df = pd.DataFrame(z_all.detach().numpy())
-            z_df = pid_df.join(z_df)
-            z_df.to_csv(mat_pth+'/BN_VAE_best_z.csv',index=None)
-    vae.train()
-print("Encoded data shape:", mu.shape)
+
 print('Best Epoch:',min_test_epoch)
 print(min_test_res[0])
 print(min_test_res[1])
@@ -177,3 +168,4 @@ loss_df_test = pd.DataFrame(losses_test)
 loss_df_test.to_csv(loss_pth_test,index=None)
 r2_df = pd.DataFrame(r2_list)
 r2_df.to_csv(mat_pth+'/R2.csv',index=None)
+

@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.optim as optim
 import torch.nn.functional as F
+import argparse
 from torch.utils.data import DataLoader, TensorDataset, Dataset
 from sklearn.model_selection import train_test_split
 from model import EmbeddingModel
@@ -68,19 +69,29 @@ hyper-parameters
 6: learning rate
 7: random seed for train-test split
 '''
-params = [90, 951, 184, 162, 68, 12, 0.0005, 38]
 
-random.seed(params[0])
-np.random.seed(params[0])
-
+random.seed(90)
+np.random.seed(90)
+#params = [90, 951, 184, 162, 68, 12, 0.0005, 38]
+parser = argparse.ArgumentParser(description="Pre-train CLIP model on Pan-Cancer data")
+parser.add_argument('--rd', type=int, default=38, help='random seed')
+parser.add_argument('--ep', type=int, default=20, help='the epochs to train the model')
+parser.add_argument('--dim', type=int, default=12, help='embedding dimension')
+parser.add_argument('--batch', type=int, default=68, help='batch size')
+parser.add_argument('--lr', type=float, default=0.0005, help='learning rate')
+parser.add_argument('--node_num', type=list, default=[951, 184, 162], help='the number of nodes in each layer')
+parser.add_argument('--pro_dir', type=str, default='./data/test_gbm_pro_df.csv', help='the protein abundance data file path')
+parser.add_argument('--rna_dir', type=str, default='./data/test_gbm_rna_df.csv', help='the RNA expression data file path')
+parser.add_argument('--pretrain_pth', type=str, default='./saved_model/embedding/', help='the pretrain model path')
+parser.add_argument('--out_dir', type=str, default='./results/embedding/fine_tune/', help='the output directory to save the model')
+args = parser.parse_args()
 '''
-rna_dir: the Glioma RNA expression data file path
-pro_dir: the Glioma protein abundance data file path
+rna_dir: the pan-cancer RNA expression data file path
+pro_dir: the pan-cancer protein abundance data file path
 RNA data and protein data are ordered by the same patient ID list
 '''
-
-rna_dir = './data/m_cg_cpt_rna.csv'
-pro_dir = './data/m_cg_cpt_pro.csv'
+rna_dir = args.rna_dir
+pro_dir = args.pro_dir
 
 
 rna_df = pd.read_csv(rna_dir)
@@ -93,24 +104,26 @@ pro_data = torch.tensor(pro_df.values, dtype=torch.float32)
 
 
 sample_num = rna_data.shape[0]
+rd = args.rd
+node_num = args.node_num
+embedding_dim = args.dim
+learning_rate = args.lr
+batch_size = args.batch
+num_epochs = args.ep
 
-node_num = [params[1],params[2],params[3]]
-embedding_dim = params[5]
-learning_rate = params[6]
-batch_size = params[4]
-num_epochs = 20
-rd = params[7]
-save_pth = './save_model/embedding/glioma/'
-mat_pth = save_pth+'saved_model/'
+save_pth = args.out_dir
+if not os.path.exists(save_pth):
+    os.makedirs(save_pth)
 
-if not os.path.exists(mat_pth):
-    os.makedirs(mat_pth)
 
 torch.manual_seed(0)
-rna_encoder = EmbeddingModel(rna_data.shape[1],node_num,embedding_dim)
-pro_encoder = EmbeddingModel(pro_data.shape[1],node_num,embedding_dim)
-
-pretrain_pth = './save_model/embedding/'
+rna_encoder = EmbeddingModel(18860,node_num,embedding_dim)
+pro_encoder = EmbeddingModel(5738,node_num,embedding_dim)
+pretrain_pth = args.pretrain_pth
+if not os.path.exists(pretrain_pth):
+    print('The pretrain model path does not exist')
+    exit(0)
+    
 pro_pretrain_pth = pretrain_pth+f'/pro_encoder_best.pth'
 pro_cp = torch.load(pro_pretrain_pth)
 pro_encoder.load_state_dict(pro_cp)
@@ -143,8 +156,7 @@ train_set = TensorDataset(x_train, y_train)
 test_set = TensorDataset(x_test, y_test)
 train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 loss_list = []
-min_test_loss = 1
-min_train_loss =1
+min_test_loss = 100
 min_test_epoch = 0
 
 for epoch in range(num_epochs):
@@ -171,10 +183,8 @@ for epoch in range(num_epochs):
         loss_t = (loss_pos_t + loss_neg_t)
         loss_list.append([epoch+1,loss_pos.item(),loss_neg.item(),loss.item(),loss_pos_t.item(),loss_neg_t.item(),loss_t.item()])
         print(f'Epoch:{epoch+1},train:pos:{loss_pos.item():.4f},neg:{loss_neg.item():.4f},total:{loss.item():.4f},test:pos:{loss_pos_t.item():.4f},neg:{loss_neg_t.item():.4f},total:{loss_t.item():.4f}')
-
         if loss_t.item() < min_test_loss:
             min_test_loss = loss_t.item()
-            min_train_loss = loss.item()
             min_test_epoch = epoch+1
             torch.save(rna_encoder.state_dict(), save_pth+f'/rna_encoder_best.pth')
             torch.save(pro_encoder.state_dict(), save_pth+f'/pro_encoder_best.pth')

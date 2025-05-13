@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import random
 import os
+import argparse
 import torch.nn.functional as F
 import scipy.stats as stats
 from sklearn.preprocessing import StandardScaler
@@ -27,7 +28,6 @@ def gen_data_from_rdz(mat_pth, num_samples=100):
     generated_df = pd.DataFrame(generated_data.numpy())
     z_df = pd.DataFrame(z.numpy())
     generated_df.to_csv(mat_pth+'/generated_data_'+str(num_samples)+'.csv',index=False)
-
 
 
 def gene_data_TTS(mat_pth, train_pid, test_pid, hidden_size=4):
@@ -52,7 +52,7 @@ def gene_data_TTS(mat_pth, train_pid, test_pid, hidden_size=4):
     generated_df.to_csv(mat_pth+'/generated_data_'+str(num_samples)+'.csv',index=False)
 
 
-def gen_data_new_cohort(mat_pth,hidden_size,z_path,fs='RNA'):
+def gen_data_new_cohort(mat_pth,hidden_size,z_path):
     z = pd.read_csv(z_path)
     num_samples = z.shape[0]
     z.drop(['PID'],axis=1,inplace=True)
@@ -61,57 +61,33 @@ def gen_data_new_cohort(mat_pth,hidden_size,z_path,fs='RNA'):
         generated_data = vae.decode(z)
     generated_df = pd.DataFrame(generated_data.numpy()) 
     z_df = pd.DataFrame(z.numpy())
-    generated_df.to_csv(mat_pth+'/'+fs+'_generated_data_'+str(num_samples)+'.csv',index=False)
+    generated_df.to_csv(mat_pth+'/'+'generated_data_'+str(num_samples)+'.csv',index=False)
 
 
-save_path = './save_model/T2Pdecoder/'
+#params = [470, 462, 244, 184, 0.0005, 83] 
+parser = argparse.ArgumentParser(description="BN-VAE application ")
+parser.add_argument('--node_num', type=list, default=[470, 462, 244], help='the number of nodes in each layer')
+parser.add_argument('--model_pth', type=str, default='./save_model/BN_VAE_best.pth', help='the pretrain model path')
+parser.add_argument('--dim', type=int, default=12, help='embedding dimension')
+parser.add_argument('--p_drop', type=float, default=0.1, help='the dropout rate')
+parser.add_argument('--emb_dir', type=str, default='./data/rna_emb_df_cohort.csv', help='the embedding data file path')
+parser.add_argument('--out_dir', type=str, default='./results/VAE', help='the output directory to save the model')
+args = parser.parse_args()
+
+
 input_size = 5738
-params = [470, 462, 244, 184, 0.0005, 83]
-rd = params[5]
-hidden_size = 12
-num_epochs = 182
-batch_size = params[3]
-p_drop = 0.1
-node_num = params[0:3]
-save_interval=10000
-KLD_weight = 1
+hidden_size = args.dim
+node_num = args.node_num
+p_drop = args.p_drop
+mat_pth = args.out_dir
+if not os.path.exists(mat_pth):
+    os.makedirs(mat_pth)
 
-
-new_dir = 'Layer_'+str(node_num[0])+'_'+str(node_num[1])+'_'+str(node_num[2])+'_Drop_'+str(p_drop)+'_BS_'+str(batch_size) +'_RD_'+str(rd)
-if not os.path.exists(save_path+new_dir):
-    os.makedirs(save_path+new_dir)
-mat_pth = save_path+new_dir
-model_path = mat_pth+'/BN_VAE_best.pth'
+model_path = args.model_pth
 vae = VAE(input_size=input_size, hidden_size=hidden_size,node_num=node_num,p_drop=p_drop)
 
 vae.load_state_dict(torch.load(model_path))
+vae.eval()
+z_path = args.emb_dir
 
-gen_data_from_rdz(mat_pth, num_samples=100)
-gen_data_from_rdz(mat_pth, num_samples=1000)
-train_df = pd.read_csv(mat_pth+'/train_pid.csv')
-test_df = pd.read_csv(mat_pth+'/test_pid.csv')
-train_pid = train_df.iloc[:,0].values.tolist()
-test_pid = test_df.iloc[:,0].values.tolist()
-gene_data_TTS(mat_pth, train_pid, test_pid, hidden_size=hidden_size)
-
-
-
-## predict Protein based RNA
-z_path = './save_model/embedding/glioma/rna_emb_df_cc2024.csv'
-gen_data_new_cohort(mat_pth,hidden_size,z_path,'RNA')
-
-# ## predicte Protein based Single Cell RNA
-z_path = './save_model/embedding/glioma/rna_emb_df_NG2021_sc.csv'
-gen_data_new_cohort(mat_pth,hidden_size,z_path,'RNA')
-
-
-# predict Protein based PanGlioma RNA
-z_path = './save_model/embedding/glioma/rna_emb_df_PanGlioma.csv'
-gen_data_new_cohort(mat_pth,hidden_size,z_path,'RNA')
-
-
-# ## predict Protein based Protein
-z_path = './save_model/embedding/glioma/pro_emb_df_CPTAC.csv'
-gen_data_new_cohort(mat_pth,hidden_size,z_path,'Pro')
-z_path = './save_model/embedding/glioma/pro_emb_df_CGGA.csv'
-gen_data_new_cohort(mat_pth,hidden_size,z_path,'Pro')
+gen_data_new_cohort(mat_pth,hidden_size,z_path)

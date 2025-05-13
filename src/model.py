@@ -32,7 +32,6 @@ class EmbeddingModel(nn.Module):
 
         self.fc5 = nn.Linear(node_num[-1], embedding_dim)
         self.bn5 = nn.BatchNorm1d(embedding_dim)
-        # self.norm = nn.BatchNorm1d(embedding_dim, affine=False)
         self._initialize_weights()
 
     def forward(self, x):
@@ -106,9 +105,9 @@ class VAE(nn.Module):
         # add dropout layer
         p=self.p
         h1 = F.relu(self.fc1(x))
-        h1 = F.dropout(h1, p=p)
+        h1 = F.dropout(h1, p=p,training=self.training)
         h2 = F.relu(self.fc2(h1))
-        h2 = F.dropout(h2, p=p)
+        h2 = F.dropout(h2, p=p,training=self.training)
         h3 = F.relu(self.fc3(h2))
         mu, logvar = self.fc_mean(h3), self.fc_logvar(h3)
         return mu, logvar
@@ -124,11 +123,11 @@ class VAE(nn.Module):
     def decode(self, z):
         p=self.p
         h5 = F.relu(self.fc5(z))
-        h5 = F.dropout(h5, p=p)
+        h5 = F.dropout(h5, p=p,training=self.training)
         h6 = F.relu(self.fc6(h5))
-        h6 = F.dropout(h6, p=p)
+        h6 = F.dropout(h6, p=p,training=self.training)
         h7 = F.relu(self.fc7(h6))
-        h7 = F.dropout(h7, p=p)
+        h7 = F.dropout(h7, p=p,training=self.training)
         h8 = self.fc8(h7)
         return h8
 

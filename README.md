@@ -66,8 +66,6 @@ T2Pdecoder/
 #### Data Files:
 - `data/gene_list.csv`: Contains the list of 18,860 genes used in the model
 - `data/pro_list.csv`: Contains the list of 5,738 proteins used in the model
-- `data/Pan_rna_df.csv`: Pan-cancer RNA expression data for pre-training
-- `data/Pan_pro_df.csv`: Pan-cancer protein abundance data for pre-training
 - `data/test_gbm_rna_df.csv`: Test GBM RNA expression data
 - `data/test_gbm_pro_df.csv`: Test GBM protein abundance data
 - `data/cite_seq_gbm_pro.csv`: CITE-seq GBM protein data for fine-tuning
@@ -138,8 +136,8 @@ Parameters:
 - `--dim`: Embedding dimension (default: 12)
 - `--batch`: Batch size (default: 68)
 - `--lr`: Learning rate (default: 0.0005)
-- `--pro_dir`: Path to protein data file (default: ./data/Pan_pro_df.csv)
-- `--rna_dir`: Path to RNA data file (default: ./data/Pan_rna_df.csv)
+- `--pro_dir`: Path to protein data file (default: ./data/test_gbm_pro_df.csv)
+- `--rna_dir`: Path to RNA data file (default: ./data/test_gbm_rna_df.csv)
 - `--out_dir`: Directory to save model (default: ./results/embedding/)
 
 Output files:

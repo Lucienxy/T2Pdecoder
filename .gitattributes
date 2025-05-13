@@ -1,3 +1,4 @@
 data/Pan_pro_df.csv filter=lfs diff=lfs merge=lfs -text
 data/Pan_rna_df.csv filter=lfs diff=lfs merge=lfs -text
-saved_model/embedding/breast/rna_encoder_best.pth filter=lfs diff=lfs merge=lfs -text
+saved_model/**/*.pth filter=lfs diff=lfs merge=lfs -text
+data/*.csv filter=lfs diff=lfs merge=lfs -text

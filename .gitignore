@@ -1,1 +1,16 @@
 .DS_Store
+
+# Large data files
+data/Pan_pro_df.csv
+data/Pan_rna_df.csv
+data/test_gbm_pro_df.csv
+data/test_gbm_rna_df.csv
+
+# Large model files
+saved_model/**/*.pth
+save_model/**/*.pth
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class

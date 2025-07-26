@@ -68,17 +68,12 @@ T2Pdecoder/
 │   ├── embedding/           # Pre-trained and fine-tuned CLIP models
 │   │   ├── rna_encoder_best.pth  # Pre-trained RNA encoder
 │   │   ├── pro_encoder_best.pth  # Pre-trained protein encoder
-│   │   ├── breast/              # Breast cancer fine-tuned models
-│   │   │   ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for breast cancer
-│   │   │   └── pro_encoder_best.pth  # Fine-tuned protein encoder for breast cancer
 │   │   └── glioma/             # Glioma fine-tuned models
 │   │       ├── rna_encoder_best.pth  # Fine-tuned RNA encoder for glioma
 │   │       └── pro_encoder_best.pth  # Fine-tuned protein encoder for glioma
 │   └── T2Pdecoder/         # Fine-tuned models for different cancer types
 │       ├── glioma/         # Glioma-specific VAE models
 │       │   └── BN_VAE_best.pth  # Best VAE model for glioma
-│       ├── breast/         # Breast cancer-specific VAE models
-│       │   └── BN_VAE_best.pth  # Best VAE model for breast cancer
 │       └── cite_gbm/       # CITE-seq GBM-specific models
 │           └── cite_ft_best.pth  # Fine-tuned model for CITE-seq GBM
 │
@@ -116,15 +111,11 @@ T2Pdecoder/
 - `saved_model/`: Contains saved model checkpoints
   - `embedding/`: 
     - Pre-trained CLIP models (rna_encoder_best.pth, pro_encoder_best.pth)
-    - Fine-tuned models for breast cancer:
-      - rna_encoder_best.pth (Fine-tuned RNA encoder)
-      - pro_encoder_best.pth (Fine-tuned protein encoder)
     - Fine-tuned models for glioma:
       - rna_encoder_best.pth (Fine-tuned RNA encoder)
       - pro_encoder_best.pth (Fine-tuned protein encoder)
   - `T2Pdecoder/`: 
     - Glioma-specific VAE models (BN_VAE_best.pth)
-    - Breast cancer-specific VAE models (BN_VAE_best.pth)
     - CITE-seq GBM-specific models (cite_ft_best.pth)
 
 ## 1. Data Preprocessing
